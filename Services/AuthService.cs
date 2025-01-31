@@ -2,6 +2,8 @@
 using InventoryManagementBlazorServer.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Blazored.LocalStorage;
+using InventoryManagement.Helpers;
+using InventoryManagementBlazorServer.DTOs;
 
 namespace InventoryManagementBlazorServer.Services;
 
@@ -20,16 +22,18 @@ public class AuthService : IAuthService
         _localStorageService = localStorageService;
     }
 
-    public async Task<ApiResponse<string>> LoginAsync(string username, string password)
+    public async Task<ApiResponse<LoginResponseDto>> LoginAsync(string username, string password)
     {
-        var response = await _httpClient.PostAsJsonAsync(ApiEndpoints.Login, new { Username = username, Password = password });
+        var requestDto = new LoginRequestDto { Username = username, Password = password };
 
-        var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse<string>>();
+        var response = await _httpClient.PostAsJsonAsync(ApiEndpoints.Login, requestDto);
+
+        var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse<LoginResponseDto>>();
 
         if(apiResponse == null)
         {
-            _notificationService.NotifyError("Error desconocido al procesar la respuesta.");
-            return new ApiResponse<string>(500, "Error desconocido");
+            _notificationService.NotifyError("Error, no se obtuvo respuesta");
+            return new ApiResponse<LoginResponseDto>(500, "Error desconocido");
         }
 
         if(!apiResponse.IsSuccess)
@@ -37,9 +41,15 @@ public class AuthService : IAuthService
             _notificationService.NotifyError(apiResponse.Message);
         } else
         {
-            await _localStorageService.SetItemAsync("authToken", apiResponse.Body);
-            _notificationService.NotifySuccess("Login exitoso!");
-            _navigation.NavigateTo("/");
+            if(!string.IsNullOrEmpty(apiResponse.Body?.Token))
+            {
+                await _localStorageService.SetItemAsync("authToken", apiResponse.Body.Token);
+                _notificationService.NotifySuccess(apiResponse.Message);
+                _navigation.NavigateTo("/");
+            } else
+            {
+                _notificationService.NotifyError(apiResponse.Message);
+            }
         }
 
         return apiResponse;
@@ -49,6 +59,6 @@ public class AuthService : IAuthService
     {
         await _localStorageService.RemoveItemAsync("authToken");
         _notificationService.NotifySuccess("Sesión cerrada correctamente.");
-        _navigation.NavigateTo("/login");
+        _navigation.NavigateTo("/");
     }
 }

@@ -1,9 +1,40 @@
 ﻿@page "/"
+@using InventoryManagementBlazorServer.Interfaces
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
 
-<PageTitle>Index</PageTitle>
+@if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <div class="alert alert-danger">@ErrorMessage</div>
+}
 
-<h1>Hello, world!</h1>
+<div class="mb-3">
+    <label>Username</label>
+    <input @bind="Username" class="form-control" />
+</div>
+<div class="mb-3">
+    <label>Password</label>
+    <input @bind-value ="Password" type="password" class="form-control" />
+</div>
 
-Welcome to your new app.
+<button class="btn btn-primary" @onclick="HandleLogin">Login</button>
 
-<SurveyPrompt Title="How is Blazor working for you?" />
+@code {
+    private string Username { get; set; } = "";
+    private string Password { get; set; } = "";
+    private string ErrorMessage { get; set; } = "";
+
+    private async Task HandleLogin()
+    {
+        var response = await AuthService.LoginAsync(Username, Password);
+
+        if (response.Code==200)
+        {
+            Navigation.NavigateTo("/");
+        }
+        else
+        {
+            ErrorMessage = response.Message;
+        }
+    }
+}
