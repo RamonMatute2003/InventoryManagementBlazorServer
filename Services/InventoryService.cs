@@ -124,4 +124,38 @@ public class InventoryService : IInventoryService
             return new ApiResponse<ProductDetailsDto>(500, "Error en la solicitud");
         }
     }
+
+    public async Task<List<FilteredInventoryOutDto>> GetFilteredInventoryOutsAsync(DateTime? startDate, DateTime? endDate, int? branchId)
+    {
+        await SetAuthorizationHeader();
+
+        try
+        {
+            var url = $"{ApiEndpoints.GetFilteredInventoryOuts}?startDate={startDate?.ToString("yyyy-MM-dd")}&endDate={endDate?.ToString("yyyy-MM-dd")}&branchId={branchId}";
+            var response = await _httpClient.GetFromJsonAsync<ApiResponse<List<FilteredInventoryOutDto>>>(url);
+
+            return response?.Body ?? new List<FilteredInventoryOutDto>();
+        } catch(Exception ex)
+        {
+            _notificationService.NotifyError($"❌ Error al obtener las salidas de inventario: {ex.Message}");
+            return new List<FilteredInventoryOutDto>();
+        }
+    }
+
+    public async Task<ApiResponse<string>> MarkAsReceivedAsync(int id)
+    {
+        await SetAuthorizationHeader();
+
+        try
+        {
+            var response = await _httpClient.PutAsync(ApiEndpoints.ReceiveInventoryOut(id), null);
+            var responseContent = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<ApiResponse<string>>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                   ?? new ApiResponse<string>(500, "Error al procesar la solicitud.");
+        } catch(Exception ex)
+        {
+            _notificationService.NotifyError($"❌ Error al marcar como recibida: {ex.Message}");
+            return new ApiResponse<string>(500, "Error desconocido.");
+        }
+    }
 }

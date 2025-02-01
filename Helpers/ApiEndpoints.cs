@@ -8,13 +8,12 @@ public static class ApiEndpoints
 
     public static string GetAvailableStock(int productId) => $"{BaseUrl}inventory/{productId}/available-stock";
 
-    public static string GetInventoryOutList => $"{BaseUrl}inventory-outs/list";
-    public static string GetInventoryOutDetail(int id) => $"{BaseUrl}inventory-outs/detail/{id}";
     public static string RegisterInventoryOut => $"{BaseUrl}inventory-outs/create";
-    public static string GetInventoryOuts => $"{BaseUrl}inventory-outs";
     public static string ReceiveInventoryOut(int id) => $"{BaseUrl}inventory-outs/{id}/receive";
 
     public static string GetBranches => $"{BaseUrl}/branches";
     public static string GetProducts => $"{BaseUrl}/products";
     public static string GetProductDetails(int productId) => $"{BaseUrl}inventory-outs/product-details/{productId}";
+
+    public static string GetFilteredInventoryOuts => $"{BaseUrl}inventory-outs";
 }

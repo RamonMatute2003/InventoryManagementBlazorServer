@@ -1,0 +1,116 @@
+﻿@page "/inventory-list"
+@using InventoryManagementBlazorServer.Interfaces
+@using InventoryManagementBlazorServer.DTOs
+@using InventoryManagementBlazorServer.Services
+@inject IInventoryService _inventoryService
+@inject INotificationService _notificationService
+
+<h3>📋 Listado de Salidas de Inventario</h3>
+
+<div class="row mb-3">
+    <div class="col-md-3">
+        <label>Fecha Inicio:</label>
+        <input type="date" @bind="startDate" class="form-control" />
+    </div>
+    <div class="col-md-3">
+        <label>Fecha Fin:</label>
+        <input type="date" @bind="endDate" class="form-control" />
+    </div>
+    <div class="col-md-3">
+        <label>Sucursal:</label>
+        <select @bind="selectedBranchId" class="form-control">
+            <option value="">Todas</option>
+            @foreach (var branch in branches)
+            {
+                <option value="@branch.Id">@branch.Name</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-3 d-flex align-items-end">
+        <button class="btn btn-primary w-100" @onclick="FilterInventoryOuts">🔍 Filtrar</button>
+    </div>
+</div>
+
+<table class="table table-striped mt-3">
+    <thead class="table-dark">
+        <tr>
+            <th>#</th>
+            <th>Fecha</th>
+            <th>Unidades</th>
+            <th>Costo Total</th>
+            <th>Estado</th>
+            <th>Usuario Recibió</th>
+            <th>Fecha Recepción</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in inventoryOuts)
+        {
+            <tr>
+                <td>@item.IdOutHeader</td>
+                <td>@item.OutDate.ToString("yyyy-MM-dd")</td>
+                <td>@item.TotalUnits</td>
+                <td>@item.TotalCost.ToString("C")</td>
+                <td>
+                    <span class="badge @(item.Status == "Enviada a Sucursal" ? "bg-success" : "bg-secondary")">
+                        @item.Status
+                    </span>
+                </td>
+                <td>@(item.ReceivedBy?.ToString() ?? "-")</td>
+                <td>@(item.ReceivedDate?.ToString("yyyy-MM-dd") ?? "-")</td>
+                <td>
+                    @if (item.Status == "Enviada a Sucursal")
+                    {
+                        <button class="btn btn-success" @onclick="() => ReceiveInventoryOut(item.IdOutHeader)">
+                            📥 Recibir
+                        </button>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@if (!inventoryOuts.Any())
+{
+    <p class="text-muted">No hay salidas de inventario registradas.</p>
+}
+
+@code {
+    private List<FilteredInventoryOutDto> inventoryOuts = new();
+    private List<BranchDto> branches = new();
+    private DateTime? startDate;
+    private DateTime? endDate;
+    private int? selectedBranchId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        branches = await _inventoryService.GetBranchesAsync();
+        await LoadInventoryOuts();
+    }
+
+    private async Task LoadInventoryOuts()
+    {
+        inventoryOuts = await _inventoryService.GetFilteredInventoryOutsAsync(startDate, endDate, selectedBranchId);
+    }
+
+    private async Task FilterInventoryOuts()
+    {
+        await LoadInventoryOuts();
+    }
+
+    private async Task ReceiveInventoryOut(int id)
+    {
+        var response = await _inventoryService.MarkAsReceivedAsync(id);
+        if (response.IsSuccess)
+        {
+            _notificationService.NotifySuccess("✅ Salida de inventario marcada como recibida.");
+            await LoadInventoryOuts();
+        }
+        else
+        {
+            _notificationService.NotifyError("❌ Error al recibir la salida de inventario.");
+        }
+    }
+}
