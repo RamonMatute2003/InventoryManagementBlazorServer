@@ -1,4 +1,4 @@
-﻿using InventoryManagement.Helpers;
+﻿using InventoryManagementBlazorServer.Helpers;
 using InventoryManagementBlazorServer.DTOs;
 
 namespace InventoryManagementBlazorServer.Interfaces;

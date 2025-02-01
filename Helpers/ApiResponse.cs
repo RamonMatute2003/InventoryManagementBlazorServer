@@ -1,4 +1,4 @@
-﻿namespace InventoryManagement.Helpers;
+﻿namespace InventoryManagementBlazorServer.Helpers;
 
 public class ApiResponse<T>
 {

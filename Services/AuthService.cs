@@ -1,8 +1,6 @@
 ﻿using InventoryManagementBlazorServer.Helpers;
 using InventoryManagementBlazorServer.Interfaces;
 using Microsoft.AspNetCore.Components;
-using Blazored.LocalStorage;
-using InventoryManagement.Helpers;
 using InventoryManagementBlazorServer.DTOs;
 
 namespace InventoryManagementBlazorServer.Services;
@@ -11,54 +9,43 @@ public class AuthService : IAuthService
 {
     private readonly HttpClient _httpClient;
     private readonly NavigationManager _navigation;
-    private readonly INotificationService _notificationService;
-    private readonly ILocalStorageService _localStorageService;
+    private readonly TokenStorageService _tokenStorageService;
 
-    public AuthService(HttpClient httpClient, NavigationManager navigation, INotificationService notificationService, ILocalStorageService localStorageService)
+    public AuthService(HttpClient httpClient, NavigationManager navigation, TokenStorageService tokenStorageService)
     {
         _httpClient = httpClient;
         _navigation = navigation;
-        _notificationService = notificationService;
-        _localStorageService = localStorageService;
+        _tokenStorageService = tokenStorageService;
     }
 
     public async Task<ApiResponse<LoginResponseDto>> LoginAsync(string username, string password)
     {
-        var requestDto = new LoginRequestDto { Username = username, Password = password };
-
-        var response = await _httpClient.PostAsJsonAsync(ApiEndpoints.Login, requestDto);
+        var response = await _httpClient.PostAsJsonAsync(ApiEndpoints.Login, new { Username = username, Password = password });
 
         var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse<LoginResponseDto>>();
 
-        if(apiResponse == null)
+        if(apiResponse == null || apiResponse.Body == null)
         {
-            _notificationService.NotifyError("Error, no se obtuvo respuesta");
             return new ApiResponse<LoginResponseDto>(500, "Error desconocido");
         }
 
         if(!apiResponse.IsSuccess)
         {
-            _notificationService.NotifyError(apiResponse.Message);
-        } else
-        {
-            if(!string.IsNullOrEmpty(apiResponse.Body?.Token))
-            {
-                await _localStorageService.SetItemAsync("authToken", apiResponse.Body.Token);
-                _notificationService.NotifySuccess(apiResponse.Message);
-                _navigation.NavigateTo("/");
-            } else
-            {
-                _notificationService.NotifyError(apiResponse.Message);
-            }
+            return apiResponse;
         }
+
+        var token = apiResponse.Body.Token;
+
+        await _tokenStorageService.SaveTokenAsync(token);
+
+        _navigation.NavigateTo("/inventory-out", forceLoad: true);
 
         return apiResponse;
     }
 
     public async Task LogoutAsync()
     {
-        await _localStorageService.RemoveItemAsync("authToken");
-        _notificationService.NotifySuccess("Sesión cerrada correctamente.");
+        _tokenStorageService.DeleteToken();
         _navigation.NavigateTo("/");
     }
 }

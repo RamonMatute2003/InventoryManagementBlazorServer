@@ -1,0 +1,115 @@
+﻿@page "/inventory-out"
+@using InventoryManagementBlazorServer.Interfaces
+@using InventoryManagementBlazorServer.DTOs
+@using InventoryManagementBlazorServer.Services
+@using System.Text.Json
+@inject IInventoryService _inventoryService
+@inject INotificationService _notificationService
+@inject NavigationManager Navigation
+@inject TokenStorageService _tokenStorageService
+
+<h3>Registrar Salida de Inventario</h3>
+
+<div class="mb-3">
+    <label>Sucursal destino:</label>
+    <select @bind="selectedBranchId" class="form-control">
+        <option value="">Seleccione una sucursal</option>
+        @foreach (var branch in branches)
+        {
+            <option value="@branch.Id">@branch.Name</option>
+        }
+    </select>
+</div>
+
+<div class="mb-3">
+    <label>Producto:</label>
+    <select @bind="selectedProductId" class="form-control">
+        <option value="">Seleccione un producto</option>
+        @foreach (var product in products)
+        {
+            <option value="@product.Id">@product.Name</option>
+        }
+    </select>
+</div>
+
+<div class="mb-3">
+    <label>Cantidad:</label>
+    <input @bind="quantity" type="number" class="form-control" min="1" />
+</div>
+
+<button class="btn btn-primary" @onclick="AddProduct">Agregar</button>
+
+<table class="table mt-4">
+    <thead>
+        <tr>
+            <th>ID Producto</th>
+            <th>Nombre</th>
+            <th>Cantidad</th>
+            <th>Lote</th>
+            <th>Costo</th>
+            <th>Fecha de Vencimiento</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in inventoryOut.Details)
+        {
+            <tr>
+                <td>@products.FirstOrDefault(p => p.Id == item.ProductId)?.Name</td>
+                <td>@item.Quantity</td>
+                <td><button class="btn btn-danger" @onclick="() => RemoveProduct(item)">Eliminar</button></td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<button class="btn btn-success" @onclick="SubmitInventoryOut">Registrar Salida</button>
+
+@code {
+    private List<BranchDto> branches = new();
+    private List<ProductDto> products = new();
+    private InventoryOutDto inventoryOut = new();
+    private int selectedBranchId;
+    private int selectedProductId;
+    private int quantity;
+
+    protected override async Task OnInitializedAsync()
+    {
+        branches = await _inventoryService.GetBranchesAsync();
+        products = await _inventoryService.GetProductsAsync();
+    }
+
+    private void AddProduct()
+    {
+        inventoryOut.Details.Add(new InventoryOutDetailDto { ProductId = selectedProductId, Quantity = quantity });
+    }
+
+    private void RemoveProduct(InventoryOutDetailDto detail)
+    {
+        inventoryOut.Details.Remove(detail);
+    }
+
+    private async Task SubmitInventoryOut()
+    {
+        inventoryOut.IdBranch = selectedBranchId;
+        inventoryOut.TotalCost = inventoryOut.Details.Sum(d =>
+            (products.FirstOrDefault(p => p.Id == d.ProductId)?.Cost ?? 0) * d.Quantity
+        ); 
+        var userId = await _tokenStorageService.GetUserIdFromTokenAsync();
+
+        if (userId == null)
+        {
+            _notificationService.NotifyError("❌ No se pudo obtener el usuario autenticado.");
+            return;
+        }
+        var jsonPayload = JsonSerializer.Serialize(inventoryOut, new JsonSerializerOptions { WriteIndented = true });
+
+        inventoryOut.IdUser = userId.Value;
+
+        var response = await _inventoryService.RegisterInventoryOutAsync(inventoryOut);
+        if (response.IsSuccess)
+        {
+            _notificationService.NotifySuccess("✅ Salida de inventario registrada con éxito!");
+        }
+    }
+}

@@ -2,39 +2,39 @@
 @using InventoryManagementBlazorServer.Interfaces
 @inject IAuthService AuthService
 @inject NavigationManager Navigation
+@inject INotificationService _notificationService
 
-@if (!string.IsNullOrEmpty(ErrorMessage))
-{
-    <div class="alert alert-danger">@ErrorMessage</div>
-}
+<div class="container">
+    <h3>Inicio de Sesión</h3>
 
-<div class="mb-3">
-    <label>Username</label>
-    <input @bind="Username" class="form-control" />
+    <div class="mb-3">
+        <label>Username</label>
+        <input @bind="Username" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label>Password</label>
+        <input @bind-value="Password" type="password" class="form-control" />
+    </div>
+
+    <button class="btn btn-primary" @onclick="HandleLogin">Login</button>
 </div>
-<div class="mb-3">
-    <label>Password</label>
-    <input @bind-value ="Password" type="password" class="form-control" />
-</div>
-
-<button class="btn btn-primary" @onclick="HandleLogin">Login</button>
 
 @code {
     private string Username { get; set; } = "";
     private string Password { get; set; } = "";
-    private string ErrorMessage { get; set; } = "";
 
     private async Task HandleLogin()
     {
         var response = await AuthService.LoginAsync(Username, Password);
 
-        if (response.Code==200)
+        if (!response.IsSuccess)
         {
-            Navigation.NavigateTo("/");
+            _notificationService.NotifyError($"❌ {response.Message}");
+            return;
         }
-        else
-        {
-            ErrorMessage = response.Message;
-        }
+
+        _notificationService.NotifySuccess("Inicio de sesión exitoso!");
+        await Task.Delay(2000);
+        Navigation.NavigateTo("/inventory-out", forceLoad: true);
     }
 }
