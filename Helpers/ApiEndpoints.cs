@@ -16,4 +16,5 @@ public static class ApiEndpoints
 
     public static string GetBranches => $"{BaseUrl}/branches";
     public static string GetProducts => $"{BaseUrl}/products";
+    public static string GetProductDetails(int productId) => $"{BaseUrl}inventory-outs/product-details/{productId}";
 }

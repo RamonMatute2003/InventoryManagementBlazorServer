@@ -9,4 +9,5 @@ public interface IInventoryService
     Task<List<ProductDto>> GetProductsAsync();
     Task<int> GetAvailableStockAsync(int productId);
     Task<ApiResponse<string>> RegisterInventoryOutAsync(InventoryOutDto inventoryOut);
+    Task<ApiResponse<ProductDetailsDto>> GetProductDetailsAsync(int productId);
 }

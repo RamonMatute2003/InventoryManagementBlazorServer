@@ -38,7 +38,7 @@ public class InventoryService : IInventoryService
         try
         {
             var response = await _httpClient.GetFromJsonAsync<ApiResponse<List<BranchDto>>>(ApiEndpoints.GetBranches);
-            return response?.Body ?? new List<BranchDto>();
+            return response?.Body ?? [];
         } catch(Exception ex)
         {
             _notificationService.NotifyError($"Error al obtener sucursales: {ex.Message}");
@@ -51,11 +51,11 @@ public class InventoryService : IInventoryService
         try
         {
             var response = await _httpClient.GetFromJsonAsync<ApiResponse<List<ProductDto>>>(ApiEndpoints.GetProducts);
-            return response?.Body ?? new List<ProductDto>();
+            return response?.Body ?? [];
         } catch(Exception ex)
         {
             _notificationService.NotifyError($"Error al obtener productos: {ex.Message}");
-            return new List<ProductDto>();
+            return [];
         }
     }
 
@@ -105,6 +105,23 @@ public class InventoryService : IInventoryService
         {
             _notificationService.NotifyError($"❌ Error en la solicitud: {ex.Message}");
             return new ApiResponse<string>(500, "Error desconocido.");
+        }
+    }
+
+    public async Task<ApiResponse<ProductDetailsDto>> GetProductDetailsAsync(int productId)
+    {
+        await SetAuthorizationHeader();
+
+        try
+        {
+            var response = await _httpClient.GetFromJsonAsync<ApiResponse<ProductDetailsDto>>(
+                $"{ApiEndpoints.GetProductDetails(productId)}");
+
+            return response ?? new ApiResponse<ProductDetailsDto>(500, "Error desconocido");
+        } catch(Exception ex)
+        {
+            _notificationService.NotifyError($"❌ Error al obtener detalles del producto: {ex.Message}");
+            return new ApiResponse<ProductDetailsDto>(500, "Error en la solicitud");
         }
     }
 }

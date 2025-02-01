@@ -11,5 +11,5 @@ public class InventoryOutDto
     [JsonPropertyName("idUser")]
     public int IdUser { get; set; }
     [JsonPropertyName("details")]
-    public List<InventoryOutDetailDto> Details { get; set; } = new();
+    public List<InventoryOutDetailDto> Details { get; set; } = [];
 }

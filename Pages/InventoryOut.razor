@@ -44,8 +44,8 @@
         <tr>
             <th>ID Producto</th>
             <th>Nombre</th>
+            <th>ID Lote</th>
             <th>Cantidad</th>
-            <th>Lote</th>
             <th>Costo</th>
             <th>Fecha de Vencimiento</th>
             <th>Acciones</th>
@@ -55,13 +55,18 @@
         @foreach (var item in inventoryOut.Details)
         {
             <tr>
-                <td>@products.FirstOrDefault(p => p.Id == item.ProductId)?.Name</td>
+                <td>@item.ProductId</td>
+                <td>@item.ProductName</td>
+                <td>@item.BatchId</td>
                 <td>@item.Quantity</td>
+                <td>@(item.Cost * item.Quantity)</td>
+                <td>@item.ExpirationDate.ToString("yyyy-MM-dd")</td>
                 <td><button class="btn btn-danger" @onclick="() => RemoveProduct(item)">Eliminar</button></td>
             </tr>
         }
     </tbody>
 </table>
+<p><strong>Total Costo: </strong> @TotalCost.ToString("C")</p>
 
 <button class="btn btn-success" @onclick="SubmitInventoryOut">Registrar Salida</button>
 
@@ -73,15 +78,54 @@
     private int selectedProductId;
     private int quantity;
 
+    private decimal TotalCost => inventoryOut.Details.Sum(d => d.Cost * d.Quantity);
+
     protected override async Task OnInitializedAsync()
     {
         branches = await _inventoryService.GetBranchesAsync();
         products = await _inventoryService.GetProductsAsync();
     }
 
-    private void AddProduct()
+    private async Task AddProduct()
     {
-        inventoryOut.Details.Add(new InventoryOutDetailDto { ProductId = selectedProductId, Quantity = quantity });
+        if (selectedProductId == 0 || quantity <= 0)
+        {
+            _notificationService.NotifyError("❌ Debes seleccionar un producto y una cantidad válida.");
+            return;
+        }
+
+        var response = await _inventoryService.GetProductDetailsAsync(selectedProductId);
+        if (response != null && response.IsSuccess && response.Body != null)
+        {
+            var productDetails = response.Body;
+
+            var selectedLot = productDetails.Lots
+                .OrderBy(l => l.ExpirationDate)
+                .FirstOrDefault();
+
+            if (selectedLot == null || selectedLot.BatchQuantity < quantity)
+            {
+                _notificationService.NotifyError("❌ No hay suficiente stock disponible para este producto.");
+                return;
+            }
+
+            inventoryOut.Details.Add(new InventoryOutDetailDto
+                {
+                    ProductId = productDetails.IdProduct,
+                    ProductName = productDetails.ProductName,
+                    BatchId = selectedLot.BatchId,
+                    Quantity = quantity,
+                    Cost = selectedLot.Cost,
+                    ExpirationDate = selectedLot.ExpirationDate
+                });
+
+
+            _notificationService.NotifySuccess($"✅ Se agregaron lotes del producto {response.Body.ProductName}.");
+        }
+        else
+        {
+            _notificationService.NotifyError("❌ No se pudo obtener información del producto.");
+        }
     }
 
     private void RemoveProduct(InventoryOutDetailDto detail)
@@ -92,9 +136,8 @@
     private async Task SubmitInventoryOut()
     {
         inventoryOut.IdBranch = selectedBranchId;
-        inventoryOut.TotalCost = inventoryOut.Details.Sum(d =>
-            (products.FirstOrDefault(p => p.Id == d.ProductId)?.Cost ?? 0) * d.Quantity
-        ); 
+        inventoryOut.TotalCost = inventoryOut.Details.Sum(d => d.Cost * d.Quantity);
+
         var userId = await _tokenStorageService.GetUserIdFromTokenAsync();
 
         if (userId == null)
