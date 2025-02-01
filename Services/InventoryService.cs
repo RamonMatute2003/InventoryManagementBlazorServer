@@ -38,11 +38,11 @@ public class InventoryService : IInventoryService
         try
         {
             var response = await _httpClient.GetFromJsonAsync<ApiResponse<List<BranchDto>>>(ApiEndpoints.GetBranches);
-            return response?.Body ?? [];
+            return response?.Body?.Where(b => b.Id != 1).ToList() ?? [];
         } catch(Exception ex)
         {
             _notificationService.NotifyError($"Error al obtener sucursales: {ex.Message}");
-            return (List<BranchDto>) new List<BranchDto>().Where( b => b.Id != 1);
+            return [];
         }
     }
 

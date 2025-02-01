@@ -90,7 +90,7 @@
     {
         if (selectedProductId == 0 || quantity <= 0)
         {
-            _notificationService.NotifyError("❌ Debes seleccionar un producto y una cantidad válida.");
+            _notificationService.NotifyError("Debes seleccionar un producto y una cantidad válida.");
             return;
         }
 
@@ -105,26 +105,32 @@
 
             if (selectedLot == null || selectedLot.BatchQuantity < quantity)
             {
-                _notificationService.NotifyError("❌ No hay suficiente stock disponible para este producto.");
+                _notificationService.NotifyError("No hay suficiente stock disponible para este producto.");
+                return;
+            }
+
+            var existingProduct = inventoryOut.Details.FirstOrDefault(p => p.ProductId == selectedProductId);
+            if (existingProduct != null)
+            {
+                _notificationService.NotifyWarning("Este producto ya está en la lista.");
                 return;
             }
 
             inventoryOut.Details.Add(new InventoryOutDetailDto
-                {
-                    ProductId = productDetails.IdProduct,
-                    ProductName = productDetails.ProductName,
-                    BatchId = selectedLot.BatchId,
-                    Quantity = quantity,
-                    Cost = selectedLot.Cost,
-                    ExpirationDate = selectedLot.ExpirationDate
-                });
+            {
+                ProductId = productDetails.IdProduct,
+                ProductName = productDetails.ProductName,
+                BatchId = selectedLot.BatchId,
+                Quantity = quantity,
+                Cost = selectedLot.Cost,
+                ExpirationDate = selectedLot.ExpirationDate
+            });
 
-
-            _notificationService.NotifySuccess($"✅ Se agregaron lotes del producto {response.Body.ProductName}.");
+            _notificationService.NotifyInfo($"Se agregaron lotes del producto {response.Body.ProductName}.");
         }
         else
         {
-            _notificationService.NotifyError("❌ No se pudo obtener información del producto.");
+            _notificationService.NotifyError("No se pudo obtener información del producto.");
         }
     }
 
@@ -148,6 +154,12 @@
         var jsonPayload = JsonSerializer.Serialize(inventoryOut, new JsonSerializerOptions { WriteIndented = true });
 
         inventoryOut.IdUser = userId.Value;
+
+        if (userId.Value != 1)
+        {
+            _notificationService.NotifyError("❌ No tienes permisos para realizar esta acción.");
+            return;
+        }
 
         var response = await _inventoryService.RegisterInventoryOutAsync(inventoryOut);
         if (response.IsSuccess)
