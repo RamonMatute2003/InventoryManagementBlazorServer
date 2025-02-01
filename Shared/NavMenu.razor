@@ -1,29 +1,51 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="/">InventoryManagementBlazorServer</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-    </div>
-</div>
+﻿@using InventoryManagementBlazorServer.Services
+@inject NavigationManager Navigation
+@inject TokenStorageService _tokenStorageService
 
-<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
-                <span class="oi oi-home" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-    </nav>
-</div>
+@if (ShouldShowNavbar)
+{
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary bg-gradient shadow-sm">
+            <div class="container">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link @(Navigation.Uri.Contains("inventory-out") ? "active" : "")" href="/inventory-out">
+                                <i class="bi bi-box-arrow-in-right"></i> Registrar Salida
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link @(Navigation.Uri.Contains("inventory-list") ? "active" : "")" href="/inventory-list">
+                                <i class="bi bi-list-check"></i> Listado de Salidas
+                            </a>
+                        </li>
+                    </ul>
+
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <button class="btn btn-outline-light fw-bold" @onclick="Logout">
+                                <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+}
 
 @code {
-    private bool collapseNavMenu = true;
+    private bool ShouldShowNavbar => !string.IsNullOrWhiteSpace(Navigation.Uri) &&
+                                      !Navigation.Uri.EndsWith("/", StringComparison.OrdinalIgnoreCase);
 
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-
-    private void ToggleNavMenu()
+    private void Logout()
     {
-        collapseNavMenu = !collapseNavMenu;
+        _tokenStorageService.DeleteToken();
+        Navigation.NavigateTo("/", forceLoad: true);
     }
 }

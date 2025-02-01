@@ -1,11 +1,11 @@
-﻿@inherits LayoutComponentBase
+﻿@using InventoryManagementBlazorServer.Services
+@inherits LayoutComponentBase
+@inject NavigationManager Navigation
+@inject TokenStorageService _tokenStorageService
 
-<PageTitle>InventoryManagementBlazorServer</PageTitle>
-
-<div class="page">
-    <main>
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
+<div class="container">
+    <NavMenu />
+    <div class="mt-4">
+        @Body
+    </div>
 </div>
