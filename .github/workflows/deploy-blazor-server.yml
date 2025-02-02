@@ -63,5 +63,5 @@ jobs:
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'inventory-blazor-server'
+          app-name: 'inventorio-blazor-server'
           package: ${{ github.workspace }}/myapp
