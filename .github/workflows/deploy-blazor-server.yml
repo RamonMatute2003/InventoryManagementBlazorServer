@@ -22,13 +22,13 @@ jobs:
           dotnet-version: '8.x'
 
       - name: Restore dependencies
-        run: dotnet restore InventarioBlazor.sln
+        run: dotnet restore InventoryManagementBlazorServer.sln
 
       - name: Build project
-        run: dotnet build InventarioBlazor.sln --configuration Release --no-restore
+        run: dotnet build InventoryManagementBlazorServer.sln --configuration Release --no-restore
 
       - name: Publish project
-        run: dotnet publish InventarioBlazor.sln -c Release -o ${{ github.workspace }}/myapp
+        run: dotnet publish InventoryManagementBlazorServer.sln -c Release -o ${{ github.workspace }}/myapp
 
       - name: Upload artifact for deployment
         uses: actions/upload-artifact@v4
