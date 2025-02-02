@@ -44,7 +44,7 @@
         <tr>
             <th>ID Producto</th>
             <th>Nombre</th>
-            <th>ID Lote</th>
+            <th>Nombre Lote</th> 
             <th>Cantidad</th>
             <th>Costo</th>
             <th>Fecha de Vencimiento</th>
@@ -57,7 +57,7 @@
             <tr>
                 <td>@item.ProductId</td>
                 <td>@item.ProductName</td>
-                <td>@item.BatchId</td>
+                <td>Lote @item.BatchId</td>
                 <td>@item.Quantity</td>
                 <td>@(item.Cost * item.Quantity)</td>
                 <td>@item.ExpirationDate.ToString("yyyy-MM-dd")</td>
