@@ -1,21 +1,10 @@
 ﻿namespace InventoryManagementBlazorServer.Helpers;
 
-public class ApiResponse<T>
+public class ApiResponse<T>(int code, string message, T? body = default)
 {
-    public int Code { get; set; }
-    public string Message { get; set; } = string.Empty;
-    public T? Body { get; set; }
-    public object? Error { get; set; }
-
-    public ApiResponse() { }
-
-    public ApiResponse(int code, string message, T? body = default, object? error = null)
-    {
-        Code = code;
-        Message = message;
-        Body = body;
-        Error = error;
-    }
+    public int Code { get; set; } = code;
+    public string Message { get; set; } = message;
+    public T? Body { get; set; } = body;
 
     public bool IsSuccess => Code >= 200 && Code < 300;
 }

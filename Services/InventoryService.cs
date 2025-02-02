@@ -1,33 +1,20 @@
 ﻿using InventoryManagementBlazorServer.Helpers;
 using InventoryManagementBlazorServer.DTOs;
 using InventoryManagementBlazorServer.Interfaces;
-using Blazored.LocalStorage;
 using System.Net.Http.Headers;
-using Microsoft.JSInterop;
 using System.Text.Json;
 
 namespace InventoryManagementBlazorServer.Services;
 
-public class InventoryService : IInventoryService
+public class InventoryService(HttpClient httpClient, TokenStorageService tokenStorageService, INotificationService notificationService) : IInventoryService
 {
-    private readonly HttpClient _httpClient;
-    private readonly TokenStorageService _tokenStorageService;
-    private readonly INotificationService _notificationService;
-
-    public InventoryService(HttpClient httpClient, TokenStorageService tokenStorageService, INotificationService notificationService)
-    {
-        _httpClient = httpClient;
-        _tokenStorageService = tokenStorageService;
-        _notificationService = notificationService;
-    }
-
     private async Task SetAuthorizationHeader()
     {
-        var token = await _tokenStorageService.GetTokenAsync();
+        var token = await tokenStorageService.GetTokenAsync();
 
         if(!string.IsNullOrEmpty(token))
         {
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
     }
 
@@ -37,11 +24,11 @@ public class InventoryService : IInventoryService
 
         try
         {
-            var response = await _httpClient.GetFromJsonAsync<ApiResponse<List<BranchDto>>>(ApiEndpoints.GetBranches);
+            var response = await httpClient.GetFromJsonAsync<ApiResponse<List<BranchDto>>>(ApiEndpoints.GetBranches);
             return response?.Body?.Where(b => b.Id != 1).ToList() ?? [];
         } catch(Exception ex)
         {
-            _notificationService.NotifyError($"Error al obtener sucursales: {ex.Message}");
+            notificationService.NotifyError($"Error al obtener sucursales: {ex.Message}");
             return [];
         }
     }
@@ -50,11 +37,11 @@ public class InventoryService : IInventoryService
     {
         try
         {
-            var response = await _httpClient.GetFromJsonAsync<ApiResponse<List<ProductDto>>>(ApiEndpoints.GetProducts);
+            var response = await httpClient.GetFromJsonAsync<ApiResponse<List<ProductDto>>>(ApiEndpoints.GetProducts);
             return response?.Body ?? [];
         } catch(Exception ex)
         {
-            _notificationService.NotifyError($"Error al obtener productos: {ex.Message}");
+            notificationService.NotifyError($"Error al obtener productos: {ex.Message}");
             return [];
         }
     }
@@ -65,11 +52,11 @@ public class InventoryService : IInventoryService
 
         try
         {
-            var response = await _httpClient.GetFromJsonAsync<ApiResponse<int>>(ApiEndpoints.GetAvailableStock(productId));
+            var response = await httpClient.GetFromJsonAsync<ApiResponse<int>>(ApiEndpoints.GetAvailableStock(productId));
             return response?.Body ?? 0;
         } catch(Exception ex)
         {
-            _notificationService.NotifyError($"Error al obtener stock: {ex.Message}");
+            notificationService.NotifyError($"Error al obtener stock: {ex.Message}");
             return 0;
         }
     }
@@ -80,7 +67,7 @@ public class InventoryService : IInventoryService
 
         try
         {
-            var response = await _httpClient.PostAsJsonAsync(ApiEndpoints.RegisterInventoryOut, inventoryOut);
+            var response = await httpClient.PostAsJsonAsync(ApiEndpoints.RegisterInventoryOut, inventoryOut);
 
             var responseContent = await response.Content.ReadAsStringAsync();
 
@@ -90,20 +77,19 @@ public class InventoryService : IInventoryService
 
                 if(apiResponse == null || !apiResponse.IsSuccess)
                 {
-                    _notificationService.NotifyError($"❌ Error en el backend: {apiResponse?.Message ?? "Respuesta vacía"}");
+                    notificationService.NotifyError($"{apiResponse?.Message}");
                     return new ApiResponse<string>(500, "Error en el servidor.");
                 }
 
-                _notificationService.NotifySuccess(apiResponse.Message);
                 return new ApiResponse<string>(apiResponse.Code, apiResponse.Message);
             } catch(JsonException)
             {
-                _notificationService.NotifyError($"❌ Error al parsear la respuesta del backend: {responseContent}");
+                notificationService.NotifyError($"Error al parsear la respuesta del backend");
                 return new ApiResponse<string>(500, "Formato de respuesta inválido.");
             }
         } catch(Exception ex)
         {
-            _notificationService.NotifyError($"❌ Error en la solicitud: {ex.Message}");
+            notificationService.NotifyError($"Error en la solicitud: {ex.Message}");
             return new ApiResponse<string>(500, "Error desconocido.");
         }
     }
@@ -114,13 +100,13 @@ public class InventoryService : IInventoryService
 
         try
         {
-            var response = await _httpClient.GetFromJsonAsync<ApiResponse<ProductDetailsDto>>(
+            var response = await httpClient.GetFromJsonAsync<ApiResponse<ProductDetailsDto>>(
                 $"{ApiEndpoints.GetProductDetails(productId)}");
 
             return response ?? new ApiResponse<ProductDetailsDto>(500, "Error desconocido");
         } catch(Exception ex)
         {
-            _notificationService.NotifyError($"❌ Error al obtener detalles del producto: {ex.Message}");
+            notificationService.NotifyError($"Error al obtener detalles del producto: {ex.Message}");
             return new ApiResponse<ProductDetailsDto>(500, "Error en la solicitud");
         }
     }
@@ -132,13 +118,13 @@ public class InventoryService : IInventoryService
         try
         {
             var url = $"{ApiEndpoints.GetFilteredInventoryOuts}?startDate={startDate?.ToString("yyyy-MM-dd")}&endDate={endDate?.ToString("yyyy-MM-dd")}&branchId={branchId}";
-            var response = await _httpClient.GetFromJsonAsync<ApiResponse<List<FilteredInventoryOutDto>>>(url);
+            var response = await httpClient.GetFromJsonAsync<ApiResponse<List<FilteredInventoryOutDto>>>(url);
 
-            return response?.Body ?? new List<FilteredInventoryOutDto>();
+            return response?.Body ?? [];
         } catch(Exception ex)
         {
-            _notificationService.NotifyError($"❌ Error al obtener las salidas de inventario: {ex.Message}");
-            return new List<FilteredInventoryOutDto>();
+            notificationService.NotifyError($"Error al obtener las salidas de inventario: {ex.Message}");
+            return [];
         }
     }
 
@@ -148,13 +134,13 @@ public class InventoryService : IInventoryService
 
         try
         {
-            var response = await _httpClient.PutAsync(ApiEndpoints.ReceiveInventoryOut(id), null);
+            var response = await httpClient.PutAsync(ApiEndpoints.ReceiveInventoryOut(id), null);
             var responseContent = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<ApiResponse<string>>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
                    ?? new ApiResponse<string>(500, "Error al procesar la solicitud.");
         } catch(Exception ex)
         {
-            _notificationService.NotifyError($"❌ Error al marcar como recibida: {ex.Message}");
+            notificationService.NotifyError($"Error al marcar como recibida: {ex.Message}");
             return new ApiResponse<string>(500, "Error desconocido.");
         }
     }

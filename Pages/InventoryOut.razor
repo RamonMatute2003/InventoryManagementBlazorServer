@@ -8,7 +8,7 @@
 @inject NavigationManager Navigation
 @inject TokenStorageService _tokenStorageService
 
-<h3>Registrar Salida de Inventario</h3>
+<h3>📦 Registrar Salida de Inventario</h3>
 
 <div class="mb-3">
     <label>Sucursal destino:</label>
@@ -37,7 +37,7 @@
     <input @bind="quantity" type="number" class="form-control" min="1" />
 </div>
 
-<button class="btn btn-primary" @onclick="AddProduct">Agregar</button>
+<button class="btn btn-primary" @onclick="AddProduct">➕ Agregar</button>
 
 <table class="table mt-4">
     <thead>
@@ -61,14 +61,14 @@
                 <td>@item.Quantity</td>
                 <td>@(item.Cost * item.Quantity)</td>
                 <td>@item.ExpirationDate.ToString("yyyy-MM-dd")</td>
-                <td><button class="btn btn-danger" @onclick="() => RemoveProduct(item)">Eliminar</button></td>
+                <td><button class="btn btn-danger" @onclick="() => RemoveProduct(item)">🗑️ Eliminar</button></td>
             </tr>
         }
     </tbody>
 </table>
 <p><strong>Total Costo: </strong> @TotalCost.ToString("C")</p>
 
-<button class="btn btn-success" @onclick="SubmitInventoryOut">Registrar Salida</button>
+<button class="btn btn-success" @onclick="SubmitInventoryOut">🚛 Registrar Salida</button>
 
 @code {
     private List<BranchDto> branches = new();
@@ -148,7 +148,7 @@
 
         if (userId == null)
         {
-            _notificationService.NotifyError("❌ No se pudo obtener el usuario autenticado.");
+            _notificationService.NotifyError("No se pudo obtener el usuario autenticado.");
             return;
         }
         var jsonPayload = JsonSerializer.Serialize(inventoryOut, new JsonSerializerOptions { WriteIndented = true });
@@ -157,14 +157,14 @@
 
         if (userId.Value != 1)
         {
-            _notificationService.NotifyError("❌ No tienes permisos para realizar esta acción.");
+            _notificationService.NotifyError("No tienes permisos para realizar esta acción.");
             return;
         }
 
         var response = await _inventoryService.RegisterInventoryOutAsync(inventoryOut);
         if (response.IsSuccess)
         {
-            _notificationService.NotifySuccess("✅ Salida de inventario registrada con éxito!");
+            _notificationService.NotifySuccess(response.Message);
         }
     }
 }

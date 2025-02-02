@@ -4,19 +4,23 @@
 @inject NavigationManager Navigation
 @inject INotificationService _notificationService
 
-<div class="container">
-    <h3>Inicio de Sesión</h3>
+<div class="d-flex justify-content-center align-items-center vh-100">
+    <div class="card shadow-lg p-4" style="width: 350px;">
+        <div class="card-body">
+            <h3 class="text-center mb-4">🔐 Inicio de Sesión</h3>
 
-    <div class="mb-3">
-        <label>Username</label>
-        <input @bind="Username" class="form-control" />
-    </div>
-    <div class="mb-3">
-        <label>Password</label>
-        <input @bind-value="Password" type="password" class="form-control" />
-    </div>
+            <div class="mb-3">
+                <label class="form-label">👤 Usuario</label>
+                <input @bind="Username" class="form-control" placeholder="Ingrese su usuario" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">🔑 Contraseña</label>
+                <input @bind-value="Password" type="password" class="form-control" placeholder="Ingrese su contraseña" />
+            </div>
 
-    <button class="btn btn-primary" @onclick="HandleLogin">Login</button>
+            <button class="btn btn-primary w-100" @onclick="HandleLogin">🚀 Iniciar Sesión</button>
+        </div>
+    </div>
 </div>
 
 @code {
@@ -29,11 +33,11 @@
 
         if (!response.IsSuccess)
         {
-            _notificationService.NotifyError($"❌ {response.Message}");
+            _notificationService.NotifyError(response.Message);
             return;
         }
 
-        _notificationService.NotifySuccess("Inicio de sesión exitoso!");
+        _notificationService.NotifySuccess(response.Message);
         await Task.Delay(2000);
         Navigation.NavigateTo("/inventory-out", forceLoad: true);
     }

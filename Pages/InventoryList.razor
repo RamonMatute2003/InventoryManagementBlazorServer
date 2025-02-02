@@ -105,12 +105,12 @@
         var response = await _inventoryService.MarkAsReceivedAsync(id);
         if (response.IsSuccess)
         {
-            _notificationService.NotifySuccess("✅ Salida de inventario marcada como recibida.");
+            _notificationService.NotifySuccess("Salida de inventario marcada como recibida.");
             await LoadInventoryOuts();
         }
         else
         {
-            _notificationService.NotifyError("❌ Error al recibir la salida de inventario.");
+            _notificationService.NotifyError("Error al recibir la salida de inventario.");
         }
     }
 }
