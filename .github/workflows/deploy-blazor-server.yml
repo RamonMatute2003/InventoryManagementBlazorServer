@@ -39,6 +39,9 @@ jobs:
   deploy:
     runs-on: windows-latest
     needs: build
+    environment:
+      name: 'Production'
+      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
 
     permissions:
       id-token: write
@@ -51,21 +54,16 @@ jobs:
           name: .net-app
           path: ${{ github.workspace }}/myapp
 
-      - name: Login to Azure using OIDC
+      - name: Login to Azure
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          allow-no-subscriptions: true
-          audience: api://AzureADTokenExchange
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'inventario-blazor-server'
+          app-name: 'inventory-blazor-server'
           package: ${{ github.workspace }}/myapp
-
-    environment:
-      name: 'Production'
